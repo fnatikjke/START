@@ -48,7 +48,7 @@ services:
 
   db_repl_image:
     container_name: "db_repl_image"
-    image: "192.168.215.159:5000/db_repl_image:latest"
+    image: "db_repl_image:latest"
     user: postgres
     restart: always
     ports:
