@@ -14,7 +14,7 @@ services:
       DB_HOST: ${DB_HOST}
       DB_PORT: ${DB_PORT}
       DB_DATABASE: ${DB_DATABASE}
-	  
+      
   db_image:
     container_name: "db_image"
     image: "db_image:latest"
