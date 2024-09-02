@@ -14,7 +14,7 @@
       shell: pip3 install paramiko psycopg2-binary python-dotenv python-telegram-bot==13.7
 
     - name: copy github
-     git:
+      git:
         repo: 'https://github.com/fnatikjke/START.git'
         dest: /tmp/START
         version: Ansible
