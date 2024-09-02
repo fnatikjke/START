@@ -18,7 +18,7 @@
         repo: 'https://github.com/fnatikjke/START.git'
         dest: /tmp/START
         version: Ansible
-        
+    - name: copy file     
       copy:
         src: /tmp/START/bot/bot.py
         dest: /home/ansible/bot
