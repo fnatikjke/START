@@ -19,7 +19,7 @@
         dest: /tmp/START
         version: Ansible
         
-    - name: copy file     
+    - name: copy file 
       copy:
         src: /tmp/START/bot/bot.py
         dest: /home/ansible/bot
@@ -35,13 +35,14 @@
   become: yes
   gather_facts: no
   tasks:
-
     - name: PG install
       apt:
         name:
-           - postgresql
-           - postgresql-contrib
+          - postgresql
+          - postgresql-contrib
         state: latest
+        update_cache: yes
+
 
     - name: PG enable
       systemd:
@@ -49,26 +50,33 @@
         state: started
         enabled: yes
 
-    - name: postgres password update
-      shell: sudo -u postgres psql -c "ALTER USER postgres WITH password 'Qq12345';"
-    - name: change in postgresql.conf
+#    - name: postgres password update
+#s      shell: sudo -u postgres psql -c "ALTER USER postgres WITH password 'Qq12345';"
+    
+
+     
+
+    - name: Update PostgreSQL configuration
       lineinfile:
-         path: /etc/postgresql/14/main/postgresql.conf
-         regexp: "{{ item.regexp }}"
-         line: "{{ item.line }}"
+        path: /etc/postgresql/13/main/postgresql.conf
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        state: present  # Убедитесь, что строка присутствует
       with_items:
-         - { regexp: "#listen_addresses = 'localhost'", line: "listen_addresses = '*'"}
-         - { regexp: '#wal_level = replica', line: 'wal_level = replica' }
-         - { regexp: '#archive_mode = off', line: 'archive_mode = on' }
-         - { regexp: "#archive_command = '''", line: "archive_command = 'cp %p /oracle/pg_data/archive/%f'"}
-         - { regexp: '#max_wal_senders = 10', line: 'max_wal_senders = 10' }
-         - { regexp: '#wal_log_hints = off', line: 'wal_log_hints = on' }
+        - { regexp: "^#listen_addresses = 'localhost'", line: "listen_addresses = '*'" }
+        - { regexp: '^#wal_level = replica', line: 'wal_level = replica' }
+        - { regexp: '^#archive_mode = off', line: 'archive_mode = on' }
+        - { regexp: "^#archive_command = '.*'", line: "archive_command = 'cp %p /oracle/pg_data/archive/%f'" }
+        - { regexp: '^#max_wal_senders = 10', line: 'max_wal_senders = 10' }
+        - { regexp: '^#wal_log_hints = off', line: 'wal_log_hints = on' }
+       
+         
     - name: change in pg_hba.conf
       blockinfile:
-         path: /etc/postgresql/14/main/pg_hba.conf
+         path: /etc/postgresql/13/main/pg_hba.conf
          insertafter: 'host    replication     all             ::1/128                 md5'
          block: |
-            host  replication all 0.0.0.0/0 scram-sha-256
+            host  replication all 0.0.0.0/0 md5
             host  all all 0.0.0.0/0 password
 
 
@@ -78,11 +86,19 @@
     - name:  create bot DB
       shell: sudo -u postgres psql -c "CREATE database arkh_test OWNER postgres;"
 
-    - name:  create email table
-      shell: sudo -u postgres psql -d tg_bot -c "CREATE TABLE IF NOT EXISTS Email(ID SERIAL PRIMARY KEY, "Электронная почта" VARCHAR(100) NOT NULL);"
+    - name: Create email table
+      postgresql_query:
+        db: arkh_test
+        query: "CREATE TABLE IF NOT EXISTS Email(ID SERIAL PRIMARY KEY, \"Электронная почта\" VARCHAR(100) NOT NULL);"
+        login_user: postgres
+        login_password: 'Qq12345'
 
-    - name:  create phone numbers table
-      shell: sudo -u postgres psql -d tg_bot -c "CREATE TABLE IF NOT EXISTS Телефон(ID SERIAL PRIMARY KEY, "Номер телефона" VARCHAR(100) NOT NULL);"
+    - name: Create phone number table
+      postgresql_query:
+        db: arkh_test
+        query: "CREATE TABLE IF NOT EXISTS Телефон(ID SERIAL PRIMARY KEY, \"Номер телефона\" VARCHAR(100) NOT NULL);"
+        login_user: postgres
+        login_password: 'Qq12345'
 
     - name: PG restart
       systemd:
@@ -107,10 +123,10 @@
         state: stopped
 
     - name: remove files
-      shell: rm -rf /var/lib/postgresql/14/main/*
+      shell: rm -rf /var/lib/postgresql/13/main/*
 
     - name: Backup initial data from master
-      shell: su - postgres -c "PGPASSWORD='repl_password' pg_basebackup -R -h 192.168.215.181 -U repl_user -D /var/lib/postgresql/14/main -P"
+      shell: su - postgres -c "PGPASSWORD='repl_password' pg_basebackup -R -h 192.168.215.181 -U repl_user -D /var/lib/postgresql/13/main -P"
 
     - name: PG start
       systemd:
